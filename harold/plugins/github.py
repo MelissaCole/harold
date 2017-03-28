@@ -254,13 +254,16 @@ class SalonDatabase(object):
 
     @inlineCallbacks
     def add_review_request(self, repo, pull_request_id, username, timestamp):
-        yield self._insert("github_review_states", {
-            "repository": repo,
-            "pull_request_id": pull_request_id,
-            "user": username,
-            "timestamp": timestamp,
-            "state": "unreviewed",
-        })
+        try:
+            yield self._insert("github_review_states", {
+                "repository": repo,
+                "pull_request_id": pull_request_id,
+                "user": username,
+                "timestamp": timestamp,
+                "state": "unreviewed",
+            })
+        except self.database.module.IntegrityError:
+            pass
 
     @inlineCallbacks
     def remove_review_request(self, repo, pull_request_id, username):
@@ -273,10 +276,7 @@ class SalonDatabase(object):
     @inlineCallbacks
     def _add_mentions(self, repo, id, body, timestamp):
         for mention in _extract_reviewers(body):
-            try:
-                yield self.add_review_request(repo, id, mention, timestamp)
-            except self.database.module.IntegrityError:
-                pass
+            yield self.add_review_request(repo, id, mention, timestamp)
 
     @inlineCallbacks
     def get_reviewers(self, repo, pr_id):
