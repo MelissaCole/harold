@@ -187,7 +187,7 @@ class SalonDatabase(object):
             }
         )
         print(query)
-        #yield self.database.runOperation(query, data)
+        yield self.database.runOperation("SELECT 1;")
 
     @inlineCallbacks
     def _is_author(self, repo, pr_id, username):
