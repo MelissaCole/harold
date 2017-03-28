@@ -182,7 +182,8 @@ class SalonDatabase(object):
         query = (
             "DELETE FROM %(table)s WHERE %(conditions)s" % {
                 "table": table,
-                "conditions": " AND ".join("{0} = :{0}".format(data.iterkeys())),
+                "conditions": " AND ".join("{0} = :{0}".format(column_name)
+                                           for column_name in data.iterkeys()),
             }
         )
         print(query)
