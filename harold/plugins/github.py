@@ -179,6 +179,10 @@ class SalonDatabase(object):
         if not self.database:
             return
 
+        # this isn't as bad as it looks. just the table/column names are
+        # done with string concatenation; those should be coming from
+        # hard-coded strings in the source and therefore safe. actual data
+        # is parameterized.
         query = (
             "DELETE FROM %(table)s WHERE %(conditions)s" % {
                 "table": table,
@@ -186,8 +190,7 @@ class SalonDatabase(object):
                                            for column_name in data.iterkeys()),
             }
         )
-        print(query)
-        yield self.database.runOperation("SELECT 1;")
+        yield self.database.runOperation(query, data)
 
     @inlineCallbacks
     def _is_author(self, repo, pr_id, username):
