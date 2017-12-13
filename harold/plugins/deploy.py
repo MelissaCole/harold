@@ -140,6 +140,7 @@ class DeployMonitor(object):
         self.deploys = {}
         self.current_hold = None
         self.current_conch = ""
+        self.conch_expirator = None
         self.queue = []
         self.current_topic = self._make_topic()
 
