@@ -232,6 +232,8 @@ class DeployMonitor(object):
         if self.queue:
             new_conch = self.queue[0]
             if new_conch != self.current_conch:
+                self._start_conch_expiration()
+
                 self.irc.bot.send_message(self.config.channel,
                     "@%s: you have the %s" % (new_conch, self.config.conch_emoji))
                 if len(self.queue) > 1:
@@ -241,6 +243,41 @@ class DeployMonitor(object):
         else:
             new_conch = None
         self.current_conch = new_conch
+
+    def _start_conch_expiration(self):
+        self._cancel_conch_expiration()
+        self.conch_expirator = reactor.callLater(30, self._warn_conch_expiration)
+
+    def _cancel_conch_expiration(self):
+        if self.conch_expirator and self.conch_expirator.active():
+            self.conch_expirator.cancel()
+        self.conch_expirator = None
+
+    def _warn_conch_expiration(self):
+        self.irc.bot.send_message(
+            self.config.channel,
+            '@%s: :eyes: are you still using the %s? please reply with "yes" if '
+            "so or else I'll have to kick you!" % (self.queue[0], self.config.conch_emoji)
+        )
+        self.conch_expirator = reactor.callLater(10, self._expire_conch)
+
+    def _expire_conch(self):
+        self.conch_expirator = None
+        self.irc.bot.send_message("@%s: sorry, but you appear to be idle." % self.queue[0])
+        self.queue.pop(0)
+        self._update_conch()
+        self._update_topic()
+
+    def yes(self, irc, sender, channel, *ignored):
+        if channel != self.config.channel:
+            return
+
+        if sender != self.queue[0]:
+            self.irc.bot.send_message(self.config.channel, "sorry, but @%s has to say it!" % self.queue[0])
+            return
+
+        self._start_conch_expiration()
+        self.irc.bot.send_message(self.config.channel, "OK, understood. :disappear:")
 
     def release(self, irc, sender, channel, *ignored):
         if channel != self.config.channel:
@@ -368,6 +405,8 @@ class DeployMonitor(object):
         return deploy.who, datetime.datetime.now() - deploy.when
 
     def onPushBegan(self, id, who, args, log_path, count):
+        self._cancel_conch_expiration()
+
         deploy = OngoingDeploy()
         deploy.id = id
         deploy.when = datetime.datetime.now()
@@ -417,6 +456,9 @@ class DeployMonitor(object):
         deploy = self.deploys.get(id)
         who, duration = self._remove_deploy(id)
 
+        if not self.deploys:
+            self._start_conch_expiration()
+
         if not who:
             return
 
@@ -449,6 +491,9 @@ class DeployMonitor(object):
 
     def onPushAborted(self, id, reason):
         who, duration = self._remove_deploy(id)
+
+        if not self.deploys:
+            self._start_conch_expiration()
 
         if not who:
             return
