@@ -539,3 +539,4 @@ def make_plugin(config, http, irc):
     irc.register_command(monitor.refresh)
     irc.register_command(monitor.help)
     irc.register_command(monitor.enqueue)
+    irc.register_command(monitor.yes)
