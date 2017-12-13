@@ -264,7 +264,10 @@ class DeployMonitor(object):
 
     def _expire_conch(self):
         self.conch_expirator = None
-        self.irc.bot.send_message("@%s: sorry, but you appear to be idle." % self.queue[0])
+        self.irc.bot.send_message(
+            self.config.channel,
+            "@%s: sorry, but you appear to be idle." % self.queue[0],
+        )
         self.queue.pop(0)
         self._update_conch()
         self._update_topic()
